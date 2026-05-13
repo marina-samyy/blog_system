@@ -1,0 +1,47 @@
+1)
+
+uvicorn app.main:app --reload
+
+docker compose up
+
+
+2)
+
+http://127.0.0.1:8000/docs
+
+
+
+3)
+{
+  "username": "marina",
+  "email": "marina@test.com",
+  "password": "123456"
+}
+
+
+
+
+4)
+{
+  "email": "marina@test.com",
+  "password": "123456"
+}
+
+
+5)login like admin
+{
+  "email": "admin@blog.com",
+  "password": "admin123"
+}
+
+
+delete zombie
+
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+
+docker exec -it redis_cache redis-cli FLUSHALL
+
+
+
