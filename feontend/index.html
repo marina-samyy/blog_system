@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blog System Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none; }
+        /* Refined Sidebar Interaction */
+        .sidebar-item { transition: all 0.2s ease; border-left: 3px solid transparent; }
+        .sidebar-item:hover { background-color: #374151; border-left-color: #7e22ce; cursor: pointer; color: #f3f4f6; }
+        .active-item { border-left-color: #7e22ce; background-color: #374151; font-weight: 600; color: #f3f4f6; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        
+        /* Deep Dark Grey Background */
+        body { background-color: #111827; }
+    </style>
+</head>
+<body class="font-sans text-gray-300 flex items-center justify-center min-h-screen p-6">
+
+    <div id="auth-view" class="w-full max-w-sm">
+        <div class="bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-700">
+            <h1 class="text-2xl font-bold text-center mb-8 text-gray-100 tracking-tight">BLOG <span class="text-purple-500">ADMIN</span></h1>
+            <div class="flex gap-6 mb-6 border-b border-gray-700">
+                <button onclick="toggleAuthMode(true)" id="tab-login" class="pb-2 text-sm font-bold border-b-2 border-purple-600 text-purple-400">Login</button>
+                <button onclick="toggleAuthMode(false)" id="tab-reg" class="pb-2 text-sm font-bold text-gray-500">Register</button>
+            </div>
+            <div class="space-y-4">
+                <input type="email" id="email" placeholder="Email" 
+                    class="w-full p-3 text-sm bg-gray-900 border border-purple-900 rounded-lg outline-none text-purple-400 placeholder-purple-900/50 hover:border-purple-700 focus:border-purple-600 transition">
+                
+                <input type="password" id="password" placeholder="Password" 
+                    class="w-full p-3 text-sm bg-gray-900 border border-purple-900 rounded-lg outline-none text-purple-400 placeholder-purple-900/50 hover:border-purple-700 focus:border-purple-600 transition">
+                
+                <div id="reg-fields" class="hidden">
+                    <p class="text-[10px] text-gray-500 uppercase">* Username generated automatically</p>
+                </div>
+                <button onclick="handleAuth()" id="auth-btn" class="w-full bg-purple-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-800 transition duration-300">Enter System</button>
+                <p id="auth-msg" class="text-center text-[10px] text-red-400 font-bold min-h-[1rem] uppercase"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-dashboard" class="hidden flex w-full max-w-4xl h-[550px] bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
+        <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+            <div class="p-5 border-b border-gray-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xs font-black text-gray-500 uppercase tracking-widest">Post Archive</h2>
+                    <span id="conn-status" class="w-2 h-2 rounded-full bg-gray-600"></span>
+                </div>
+                <button onclick="resetForm()" class="w-full text-[11px] bg-gray-700 border border-gray-600 text-gray-300 py-2 rounded-md font-bold uppercase hover:bg-purple-900 hover:text-white hover:border-purple-900 transition">New Entry</button>
+            </div>
+            
+            <div id="posts-sidebar-list" class="flex-1 overflow-y-auto py-2 space-y-1">
+                <div class="text-center py-10 opacity-40 text-[10px] uppercase">Loading...</div>
+            </div>
+
+            <div class="p-4 bg-gray-800/50 border-t border-gray-700">
+                <p id="user-info" class="text-[9px] font-bold text-gray-500 mb-3 truncate uppercase tracking-widest text-center"></p>
+                <button onclick="logout()" class="w-full bg-gray-700 text-gray-400 py-2 rounded border border-gray-600 text-[10px] font-bold uppercase hover:text-red-400 hover:border-red-900 transition">Exit</button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col bg-gray-900">
+            <header class="h-14 border-b border-gray-800 flex justify-between items-center px-8">
+                <h3 id="view-title" class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Editor Workspace</h3>
+                <button onclick="checkHealth()" class="text-gray-600 hover:text-purple-500 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-10">
+                <div class="max-w-xl mx-auto">
+                    <section class="space-y-6">
+                        <div class="flex items-center gap-2">
+                            <span id="active-post-id-display" class="text-[9px] font-mono bg-gray-800 px-2 py-0.5 rounded text-gray-500 uppercase">Draft</span>
+                        </div>
+                        
+                        <input type="text" id="target-title" placeholder="Title" 
+                            class="w-full text-2xl font-bold outline-none bg-transparent text-purple-500 placeholder-purple-900/40 border-b border-purple-900 hover:border-purple-700 focus:border-purple-600 transition pb-2">
+                        
+                        <textarea id="target-content" placeholder="Write something..." 
+                            class="w-full h-40 outline-none resize-none text-sm leading-relaxed p-4 bg-gray-900/50 rounded-lg border border-purple-900 text-purple-400 placeholder-purple-900/50 hover:border-purple-700 focus:border-purple-600 transition"></textarea>
+                        
+                        <div class="flex gap-3 pt-4">
+                            <button onclick="createPost()" id="btn-create" class="bg-purple-900 text-white px-6 py-2 rounded text-xs font-bold uppercase tracking-widest hover:bg-purple-800 transition shadow-sm">Publish</button>
+                            <button onclick="updatePost()" id="btn-update" class="hidden bg-gray-700 text-white px-6 py-2 rounded text-xs font-bold uppercase tracking-widest hover:bg-purple-900 transition">Update</button>
+                            <button onclick="deletePost()" id="btn-delete" class="hidden text-gray-500 px-4 py-2 text-[10px] font-bold uppercase hover:text-red-500 transition">Discard</button>
+                        </div>
+                    </section>
+
+                    <section id="comments-area" class="hidden mt-12 pt-8 border-t border-gray-800">
+                        <h4 class="font-bold uppercase text-[9px] text-gray-500 mb-6 tracking-widest text-center">Internal Discussion</h4>
+                        <div class="space-y-6">
+                            <div class="flex gap-2 bg-gray-800 p-1.5 rounded border border-purple-900 hover:border-purple-700 transition">
+                                <input type="text" id="new-comment-input" placeholder="Add note..." class="flex-1 bg-transparent px-3 py-1.5 text-xs text-purple-400 outline-none placeholder-purple-900/50">
+                                <button onclick="addComment()" class="bg-gray-700 text-white px-4 py-1.5 rounded text-[10px] font-bold uppercase hover:bg-purple-900 transition">Add</button>
+                            </div>
+                            <div id="comments-list" class="space-y-4"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API = "http://localhost:8000";
+        let isLogin = true;
+        let selectedPostId = null;
+        let currentPosts = [];
+
+        function log(msg) { console.log("SYSTEM:", msg); }
+
+        function saveToLocal(posts) {
+            localStorage.setItem('marina_posts_backup', JSON.stringify(posts));
+        }
+
+        function getLocalBackup() {
+            const data = localStorage.getItem('marina_posts_backup');
+            return data ? JSON.parse(data) : [];
+        }
+
+        function toggleAuthMode(loginMode) {
+            isLogin = loginMode;
+            document.getElementById('reg-fields').classList.toggle('hidden', isLogin);
+            document.getElementById('auth-btn').innerText = isLogin ? "Enter System" : "Create Account";
+            document.getElementById('tab-login').className = isLogin ? "pb-2 text-sm font-bold border-b-2 border-purple-600 text-purple-400" : "pb-2 text-sm font-bold text-gray-500";
+            document.getElementById('tab-reg').className = !isLogin ? "pb-2 text-sm font-bold border-b-2 border-purple-600 text-purple-400" : "pb-2 text-sm font-bold text-gray-500";
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isLogin ? '/auth/login' : '/auth/register';
+            const payload = { email, password };
+            if (!isLogin) payload.username = email.split('@')[0]; 
+            try {
+                const res = await fetch(`${API}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (isLogin) {
+                        localStorage.setItem('token', data.access_token);
+                        localStorage.setItem('userEmail', email);
+                        openDashboard();
+                    } else {
+                        alert("Account created! You can now login.");
+                        toggleAuthMode(true);
+                    }
+                } else { document.getElementById('auth-msg').innerText = data.detail || "Auth Failed"; }
+            } catch (e) { log("Auth Connection Error"); }
+        }
+
+        function openDashboard() {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('main-dashboard').classList.remove('hidden');
+            document.getElementById('user-info').innerText = localStorage.getItem('userEmail');
+            fetchPosts();
+        }
+
+        async function fetchPosts() {
+            try {
+                const res = await fetch(`${API}/posts/posts/?page=1&size=50`);
+                const result = await res.json();
+                const apiData = result.data || (Array.isArray(result) ? result : []);
+                if (apiData.length > 0) {
+                    currentPosts = apiData;
+                    saveToLocal(currentPosts);
+                } else {
+                    currentPosts = getLocalBackup();
+                }
+                renderSidebar();
+                document.getElementById('conn-status').className = "w-2 h-2 rounded-full bg-green-500 shadow-sm";
+            } catch (e) {
+                currentPosts = getLocalBackup();
+                renderSidebar();
+                document.getElementById('conn-status').className = "w-2 h-2 rounded-full bg-red-900";
+            }
+        }
+
+        function renderSidebar() {
+            const list = document.getElementById('posts-sidebar-list');
+            if (currentPosts.length === 0) {
+                list.innerHTML = '<p class="text-[10px] text-center opacity-30 mt-10 text-gray-500">NO POSTS</p>';
+                return;
+            }
+            list.innerHTML = currentPosts.map(p => `
+                <div class="px-5 py-3 sidebar-item ${selectedPostId == p.id ? 'active-item' : ''}" onclick="loadPostDetail(${p.id})">
+                    <p class="font-bold text-[11px] truncate uppercase tracking-tighter text-gray-200">${p.title || 'Untitled'}</p>
+                    <p class="text-[8px] opacity-40 font-mono mt-0.5 text-gray-400">REF: ${p.id}</p>
+                </div>
+            `).join('');
+        }
+
+        async function loadPostDetail(id) {
+            selectedPostId = id;
+            const p = currentPosts.find(item => item.id === id);
+            if (!p) return;
+            document.getElementById('target-title').value = p.title;
+            document.getElementById('target-content').value = p.content;
+            document.getElementById('active-post-id-display').innerText = `ID: ${id}`;
+            document.getElementById('btn-create').classList.add('hidden');
+            document.getElementById('btn-update').classList.remove('hidden');
+            document.getElementById('btn-delete').classList.remove('hidden');
+            document.getElementById('comments-area').classList.remove('hidden');
+            renderSidebar();
+            fetchComments(id);
+        }
+
+        async function fetchComments(postId) {
+            const res = await fetch(`${API}/comments/${postId}`);
+            const data = await res.json();
+            const comments = Array.isArray(data) ? data : (data.data || []);
+            const list = document.getElementById('comments-list');
+            list.innerHTML = comments.length > 0 ? comments.map(c => `
+                <div class="border-b border-gray-800 pb-4 text-xs group" id="comment-container-${c.id}">
+                    <div id="comment-view-${c.id}" class="flex justify-between items-start">
+                        <span id="comment-content-${c.id}" class="text-purple-400/80 leading-relaxed">${c.content}</span>
+                        <div class="flex gap-3 ml-4">
+                            <button onclick="toggleCommentEdit(${c.id}, true)" class="text-gray-600 text-[8px] opacity-0 group-hover:opacity-100 transition font-bold uppercase">Edit</button>
+                            <button onclick="deleteComment(${c.id})" class="text-red-900 text-[8px] opacity-0 group-hover:opacity-100 transition font-bold uppercase">Drop</button>
+                        </div>
+                    </div>
+                    <div id="comment-edit-${c.id}" class="hidden mt-2 flex flex-col gap-2">
+                        <input type="text" id="edit-input-${c.id}" value="${c.content}" class="w-full p-2 bg-gray-800 border border-purple-900 rounded text-[11px] text-purple-400 outline-none">
+                        <div class="flex gap-2">
+                            <button onclick="updateComment(${c.id})" class="text-purple-400 text-[9px] font-bold uppercase">Save</button>
+                            <button onclick="toggleCommentEdit(${c.id}, false)" class="text-gray-500 text-[9px] font-bold uppercase">Back</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('') : '<p class="text-[10px] text-center opacity-30 text-gray-500">NO NOTES</p>';
+        }
+
+        function toggleCommentEdit(cid, show) {
+            document.getElementById(`comment-view-${cid}`).classList.toggle('hidden', show);
+            document.getElementById(`comment-edit-${cid}`).classList.toggle('hidden', !show);
+        }
+
+        async function addComment() {
+            const content = document.getElementById('new-comment-input').value;
+            if(!content) return;
+            const res = await fetch(`${API}/comments/`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ post_id: selectedPostId, content: content })
+            });
+            if(res.ok) {
+                document.getElementById('new-comment-input').value = '';
+                fetchComments(selectedPostId);
+            }
+        }
+
+        async function updateComment(cid) {
+            const newContent = document.getElementById(`edit-input-${cid}`).value;
+            if(!newContent) return;
+            const res = await fetch(`${API}/comments/${cid}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ content: newContent })
+            });
+            if(res.ok) fetchComments(selectedPostId);
+        }
+
+        async function deleteComment(cid) {
+            if(!confirm("Remove?")) return;
+            const res = await fetch(`${API}/comments/${cid}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            if(res.ok) fetchComments(selectedPostId);
+        }
+
+        async function createPost() {
+            const title = document.getElementById('target-title').value;
+            const content = document.getElementById('target-content').value;
+            try {
+                const res = await fetch(`${API}/posts/posts/`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ title, content })
+                });
+                const newPost = await res.json();
+                if(res.ok) {
+                    currentPosts.unshift(newPost);
+                    saveToLocal(currentPosts);
+                    resetForm();
+                }
+            } catch (e) { log("Creation error"); }
+        }
+
+        async function updatePost() {
+            const title = document.getElementById('target-title').value;
+            const content = document.getElementById('target-content').value;
+            try {
+                const res = await fetch(`${API}/posts/posts/${selectedPostId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ title, content })
+                });
+                if (res.ok) {
+                    currentPosts = currentPosts.map(p => p.id === selectedPostId ? {...p, title, content} : p);
+                    saveToLocal(currentPosts);
+                    renderSidebar();
+                }
+            } catch (e) { log("Update error"); }
+        }
+
+        async function deletePost() {
+            if(!confirm("Discard post?")) return;
+            try {
+                const res = await fetch(`${API}/posts/posts/${selectedPostId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                if(res.ok) {
+                    currentPosts = currentPosts.filter(p => p.id !== selectedPostId);
+                    saveToLocal(currentPosts);
+                    resetForm();
+                }
+            } catch (e) { log("Delete error"); }
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${API}/monitoring/health`);
+                const data = await res.json();
+                alert(`Status: ${data.status || 'CONNECTED'}`);
+            } catch(e) { alert("OFFLINE"); }
+        }
+
+        function resetForm() {
+            selectedPostId = null;
+            document.getElementById('target-title').value = '';
+            document.getElementById('target-content').value = '';
+            document.getElementById('active-post-id-display').innerText = "Draft";
+            document.getElementById('btn-create').classList.remove('hidden');
+            document.getElementById('btn-update').classList.add('hidden');
+            document.getElementById('btn-delete').classList.add('hidden');
+            document.getElementById('comments-area').classList.add('hidden');
+            renderSidebar();
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        if (localStorage.getItem('token')) openDashboard();
+    </script>
+</body>
+</html>
